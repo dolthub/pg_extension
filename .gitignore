@@ -1,0 +1,28 @@
+**/.idea/
+**/.dolt/
+.vscode
+.run
+venv
+
+.DS_Store
+.sqlhistory
+.doltcfg
+test.sh
+
+# ignore cp'd sysbench runner testing files
+SysbenchDockerfile
+SysbenchDockerfile.dockerignore
+sysbench-runner-tests-entrypoint.sh
+config.json
+integration-tests/bats/batsee_results
+
+# ignore log files created from logic test and regression tests
+testing/logictest/*.log
+testing/go/regression/out
+
+# ignore sysbench
+scripts/mini_sysbench
+
+# ignore doltgres db created
+doltgres
+postgres

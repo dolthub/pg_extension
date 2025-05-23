@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package library_package_name
 
 /*
 #include "exports.h"
@@ -71,28 +71,6 @@ func pg_detoast_datum_packed(d unsafe.Pointer) unsafe.Pointer {
 //export text_to_cstring
 func text_to_cstring(t unsafe.Pointer) *C.char {
 	return C.CString("returned_from_text_to_cstring")
-}
-
-//export strlcpy
-func strlcpy(dst *C.char, src *C.pgext_const_char, size C.size_t) C.size_t {
-	var srcLen C.size_t
-	for {
-		if *(*C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(src)) + uintptr(srcLen))) == 0 {
-			break
-		}
-		srcLen++
-	}
-	if size != 0 {
-		n := srcLen
-		if n >= size {
-			n = size - 1
-		}
-		dstSlice := unsafe.Slice((*byte)(unsafe.Pointer(dst)), int(n+1))
-		srcSlice := unsafe.Slice((*byte)(unsafe.Pointer(src)), int(n))
-		copy(dstSlice, srcSlice)
-		dstSlice[n] = 0
-	}
-	return srcLen
 }
 
 //export uuid_in

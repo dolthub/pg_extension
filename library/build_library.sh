@@ -7,4 +7,19 @@ windows) ext="dll" ;;
 darwin) ext="dylib" ;;
 *) ext="so" ;;
 esac
-CGO_ENABLED=1 go build -buildmode=c-shared -o "../output/pg_extension.${ext}" .
+
+mkdir -p temp_lib
+trap 'rm -rf temp_lib' EXIT
+
+cp ./*.* ./temp_lib
+
+for f in temp_lib/*.go; do
+  sed 's/^package library_package_name$/package main/' "$f" > "$f".tmp
+  mv "$f".tmp "$f"
+done
+printf "module github.com/dolthub/pg_extension\n\ngo 1.24" > ./temp_lib/go.mod
+
+(
+    cd temp_lib
+    CGO_ENABLED=1 go build -buildmode=c-shared -o "../../output/pg_extension.${ext}" .
+)

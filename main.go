@@ -41,8 +41,8 @@ func main() {
 	if isNotNull {
 		val := C.GoString((*C.char)(unsafe.Pointer(datum)))
 		FreeDatum(datum)
-		fmt.Printf("uuid_generate_v4:\n  %v", val)
+		fmt.Printf("uuid_generate_v4:\n  %v\n", val)
 	} else {
-		fmt.Printf("uuid_generate_v4:\n  null")
+		fmt.Printf("uuid_generate_v4:\n  null\n")
 	}
 }

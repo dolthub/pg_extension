@@ -44,12 +44,10 @@ type ExtensionFiles struct {
 
 // LoadExtensions loads information for all extensions that are in the extensions directory of a local Postgres installation.
 func LoadExtensions() (map[string]*ExtensionFiles, error) {
-	installDirectory, err := PostgresInstallDirectory()
+	libDir, extDir, err := PostgresDirectories()
 	if err != nil {
 		return nil, err
 	}
-	libDir := fmt.Sprintf("%s/lib", installDirectory)
-	extDir := fmt.Sprintf("%s/share/extension", installDirectory)
 	dirEntries, err := os.ReadDir(extDir)
 	if err != nil {
 		return nil, err

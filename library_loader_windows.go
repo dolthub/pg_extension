@@ -33,19 +33,18 @@ var addPGBinDir = &sync.Once{}
 
 // loadLibraryInternal handles the loading of an extension's DLL.
 func loadLibraryInternal(path string) (InternalLoadedLibrary, error) {
-	var err error
 	addPGBinDir.Do(func() {
 		_, currentFileLocation, _, ok := runtime.Caller(0)
 		if !ok || len(currentFileLocation) == 0 {
 			panic("cannot find the directory where this file exists")
 		}
-		dllDir := fmt.Sprintf("%s%coutput", filepath.Clean(filepath.Dir(currentFileLocation)), filepath.Separator)
+		dllDir := filepath.Join(filepath.Dir(currentFileLocation), "output")
 		dirPtr, err := syscall.UTF16PtrFromString(dllDir)
 		if err != nil {
 			panic(err)
 		}
 		_, _, _ = syscall.MustLoadDLL("kernel32.dll").MustFindProc("SetDllDirectoryW").Call(uintptr(unsafe.Pointer(dirPtr)))
-		_, _ = syscall.LoadLibrary(fmt.Sprintf("%s%cpg_extension.dll", dllDir, filepath.Separator))
+		_, _ = syscall.LoadLibrary(filepath.Join(dllDir, "pg_extension.dll"))
 	})
 	d, err := syscall.LoadLibrary(path)
 	if err != nil {

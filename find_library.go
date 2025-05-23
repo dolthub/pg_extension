@@ -14,8 +14,27 @@
 
 package main
 
-// PostgresInstallDirectory returns the installation directory of a local Postgres instance.
-func PostgresInstallDirectory() (string, error) {
-	// TODO: look for the install directory, right now it's hardcoded for Windows
-	return `C:/Program Files/PostgreSQL/15`, nil
+import (
+	"bytes"
+	"os/exec"
+	"strings"
+)
+
+// PostgresDirectories returns the installation directories of a local Postgres instance.
+func PostgresDirectories() (libDir string, extensionDir string, err error) {
+	var buffer bytes.Buffer
+	cmd := exec.Command("pg_config", "--pkglibdir")
+	cmd.Stdout = &buffer
+	if err := cmd.Run(); err != nil {
+		return "", "", err
+	}
+	libDir = strings.TrimSpace(buffer.String())
+	buffer.Reset()
+	cmd = exec.Command("pg_config", "--sharedir")
+	cmd.Stdout = &buffer
+	if err := cmd.Run(); err != nil {
+		return "", "", err
+	}
+	extensionDir = strings.TrimSpace(buffer.String()) + "/extension"
+	return libDir, extensionDir, nil
 }

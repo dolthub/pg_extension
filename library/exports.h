@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef PG_EXT_EXPORTS_H
+#define PG_EXT_EXPORTS_H
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -57,3 +60,8 @@ enum {
 	SZ_FMGRINFO = sizeof(FmgrInfo),
 	SZ_FCINFO   = sizeof(FunctionCallInfoBaseData)
 };
+
+typedef const char pgext_const_char;
+typedef const uint8_t pgext_const_uint8;
+
+#endif //PG_EXT_EXPORTS_H

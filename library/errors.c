@@ -14,15 +14,26 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdbool.h>
+
+#if defined(_WIN32) || defined(_WIN64)
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__((visibility("default")))
+#endif
 
 static char last_error[512];
 
-__declspec(dllexport) int errstart(int elevel, const char* file, int line, const char* func, const char* domain) {
+DLLEXPORT bool errstart(int elevel, const char* domain) {
 	last_error[0] = '\0';
 	return 1;
 }
 
-__declspec(dllexport) int errmsg(const char *fmt, ...) {
+DLLEXPORT bool errstart_cold(int elevel, const char *domain) {
+	return errstart(elevel, domain);
+}
+
+DLLEXPORT int errmsg(const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
 	vsnprintf(last_error, sizeof(last_error), fmt, ap);
@@ -30,7 +41,15 @@ __declspec(dllexport) int errmsg(const char *fmt, ...) {
 	return 0;
 }
 
-__declspec(dllexport) int errfinish(int dummy, ...) {
+DLLEXPORT int errmsg_internal(const char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	vsnprintf(last_error, sizeof(last_error), fmt, ap);
+	va_end(ap);
+	return 0;
+}
+
+DLLEXPORT int errfinish(int dummy, ...) {
 	if (last_error[0]) {
 		fprintf(stderr, "Postgres ERROR: %s\n", last_error);
 	}

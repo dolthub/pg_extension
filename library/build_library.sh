@@ -8,13 +8,18 @@ darwin) ext="dylib" ;;
 *) ext="so" ;;
 esac
 
+# MacOS requires that exported functions are present in the calling binary, but other platforms use a dynamic library.
+# To account for this, we put the exported functions in a normal package by default.
+# For MacOS, this works just fine as we import the package.
+# To make a dynamic library, we copy the files into a temporary directory and modify the files to create a valid library.
+# This lets us use the same code for both scenarios.
 mkdir -p temp_lib
 trap 'rm -rf temp_lib' EXIT
 
 cp ./*.* ./temp_lib
 
 for f in temp_lib/*.go; do
-  sed 's/^package library_package_name$/package main/' "$f" > "$f".tmp
+  sed 's/^package extension_cgo$/package main/' "$f" > "$f".tmp
   mv "$f".tmp "$f"
 done
 printf "module github.com/dolthub/pg_extension\n\ngo 1.24" > ./temp_lib/go.mod

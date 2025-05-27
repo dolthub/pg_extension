@@ -14,7 +14,7 @@
 
 //go:build !darwin
 
-package library_package_name
+package extension_cgo
 
 /*
 #include "exports.h"

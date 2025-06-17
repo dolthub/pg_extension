@@ -12,16 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package pg_extension
 
-import "C"
 import (
 	"fmt"
 	"os"
-	"unsafe"
+	"testing"
+
+	"github.com/google/uuid"
 )
 
-func main() {
+func TestSmoke(t *testing.T) {
 	extensionFiles, err := LoadExtensions()
 	if err != nil {
 		fmt.Printf("%s\n", err.Error())
@@ -36,12 +37,13 @@ func main() {
 		_ = lib.internal.Close()
 	}()
 	fmt.Printf("Pg_magic_func:\n  version=%d  maxArgs=%d  nameDataLen=%d\n",
-		lib.magic.Version, lib.magic.FuncMaxArgs, lib.magic.NameDataLen)
-	datum, isNotNull := CallFmgrFunction(lib.funcs["uuid_generate_v4"].Ptr)
+		lib.Magic.Version, lib.Magic.FuncMaxArgs, lib.Magic.NameDataLen)
+	datum, isNotNull := CallFmgrFunction(lib.Funcs["uuid_generate_v4"].Ptr)
 	if isNotNull {
-		val := C.GoString((*C.char)(unsafe.Pointer(datum)))
+		val := FromDatumGoBytes(datum, 16)
 		FreeDatum(datum)
-		fmt.Printf("uuid_generate_v4:\n  %v\n", val)
+		uuidVal, _ := uuid.FromBytes(val)
+		fmt.Printf("uuid_generate_v4:\n  %v\n", uuidVal.String())
 	} else {
 		fmt.Printf("uuid_generate_v4:\n  null\n")
 	}

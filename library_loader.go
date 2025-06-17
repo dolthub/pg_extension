@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package pg_extension
 
 import (
 	"fmt"
@@ -21,8 +21,9 @@ import (
 
 // Library is a fully-loaded extension library.
 type Library struct {
-	magic    PgMagicStruct
-	funcs    map[string]Function
+	Magic    PgMagicStruct
+	Funcs    map[string]Function
+	Version  Version
 	internal InternalLoadedLibrary
 }
 
@@ -88,8 +89,8 @@ func LoadLibrary(path string, funcNames []string) (*Library, error) {
 	}
 	magicStruct := *(FromDatum[PgMagicStruct](magicStructDatum))
 	lib := &Library{
-		magic:    magicStruct,
-		funcs:    make(map[string]Function),
+		Magic:    magicStruct,
+		Funcs:    make(map[string]Function),
 		internal: internalLib,
 	}
 	for _, funcName := range funcNames {
@@ -107,7 +108,7 @@ func LoadLibrary(path string, funcNames []string) (*Library, error) {
 		if err != nil {
 			return nil, err
 		}
-		lib.funcs[funcName] = Function{
+		lib.Funcs[funcName] = Function{
 			Name:       funcName,
 			Ptr:        funcPtr,
 			Args:       nil,

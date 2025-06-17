@@ -62,6 +62,7 @@ enum {
 };
 
 typedef const char pgext_const_char;
+typedef unsigned char pgext_unsigned_char;
 typedef const uint8_t pgext_const_uint8;
 
 #endif //PG_EXT_EXPORTS_H

@@ -14,7 +14,7 @@
 
 //go:build linux
 
-package main
+package pg_extension
 
 /*
 #cgo LDFLAGS: -ldl
@@ -30,6 +30,9 @@ import (
 	"sync"
 	"unsafe"
 )
+
+// PLATFORM specifies which platform applies to the current library loader. This will always be a three-letter string.
+const PLATFORM = "LIN"
 
 // unixLib is the Linux-specific implementation of InternalLoadedLibrary.
 type unixLib struct {

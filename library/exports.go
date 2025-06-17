@@ -23,6 +23,7 @@ static inline Datum FunctionPassthrough(PGFunction f, FunctionCallInfoBaseData *
 */
 import "C"
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 	"unsafe"
@@ -70,21 +71,54 @@ func pg_detoast_datum_packed(d unsafe.Pointer) unsafe.Pointer {
 
 //export text_to_cstring
 func text_to_cstring(t unsafe.Pointer) *C.char {
-	return C.CString("returned_from_text_to_cstring")
+	return C.CString(C.GoString((*C.char)(t)))
 }
 
 //export uuid_in
 func uuid_in(fc C.FunctionCallInfo) C.Datum {
 	uuidInputStr := (*C.pgext_const_char)(unsafe.Pointer(uintptr(fc.args[0].value)))
-	inputLength := C.strlen(uuidInputStr)
-	uuidOutputStr := (*C.char)(C.malloc(inputLength + 1))
-	_ = strlcpy(uuidOutputStr, uuidInputStr, inputLength)
-	return C.Datum(uintptr(unsafe.Pointer(uuidOutputStr)))
+	uuidInputBytes := decodeUuidStr([]byte(C.GoString(uuidInputStr)))
+	outputBytes := (*C.pgext_unsigned_char)(C.malloc(C.size_t(len(uuidInputBytes))))
+	C.memcpy(unsafe.Pointer(outputBytes), unsafe.Pointer(&uuidInputBytes[0]), C.size_t(len(uuidInputBytes)))
+	return C.Datum(uintptr(unsafe.Pointer(outputBytes)))
+}
+
+// decodeUuidStr is a helper function for uuid_in, which converts the given byte slice to the static array representation.
+func decodeUuidStr(strBytes []byte) [16]byte {
+	if strBytes[8] != '-' || strBytes[13] != '-' || strBytes[18] != '-' || strBytes[23] != '-' {
+		return [16]byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}
+	}
+	u := [16]byte{}
+	src := strBytes
+	dst := u[:]
+	for i, byteGroup := range []int{8, 4, 4, 4, 12} {
+		if i > 0 {
+			src = src[1:]
+		}
+		_, err := hex.Decode(dst[:byteGroup/2], src[:byteGroup])
+		if err != nil {
+			return [16]byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}
+		}
+		src = src[byteGroup:]
+		dst = dst[byteGroup/2:]
+	}
+	return u
 }
 
 //export uuid_out
 func uuid_out(ptr unsafe.Pointer) C.Datum {
-	return 0
+	uuidInputBytes := C.GoBytes(ptr, 16)
+	textBuffer := make([]byte, 36)
+	_ = hex.Encode(textBuffer[0:8], uuidInputBytes[0:4])
+	textBuffer[8] = '-'
+	_ = hex.Encode(textBuffer[9:13], uuidInputBytes[4:6])
+	textBuffer[13] = '-'
+	_ = hex.Encode(textBuffer[14:18], uuidInputBytes[6:8])
+	textBuffer[18] = '-'
+	_ = hex.Encode(textBuffer[19:23], uuidInputBytes[8:10])
+	textBuffer[23] = '-'
+	_ = hex.Encode(textBuffer[24:], uuidInputBytes[10:])
+	return C.Datum(uintptr(unsafe.Pointer(C.CString(string(textBuffer)))))
 }
 
 //export DirectFunctionCall1Coll

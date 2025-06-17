@@ -14,7 +14,7 @@
 
 //go:build darwin
 
-package main
+package pg_extension
 
 // Unlike the other platforms, we import the functions directly into the binary
 import _ "github.com/dolthub/pg_extension/library"

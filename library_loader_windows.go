@@ -14,7 +14,7 @@
 
 //go:build windows
 
-package main
+package pg_extension
 
 import (
 	"fmt"
@@ -24,6 +24,9 @@ import (
 	"syscall"
 	"unsafe"
 )
+
+// PLATFORM specifies which platform applies to the current library loader. This will always be a three-letter string.
+const PLATFORM = "WIN"
 
 // winLib is the Windows-specific implementation of InternalLoadedLibrary.
 type winLib struct{ dll syscall.Handle }

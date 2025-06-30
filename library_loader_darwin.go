@@ -25,8 +25,9 @@ import "C"
 
 import (
 	"fmt"
-	"sync"
 	"unsafe"
+
+	_ "github.com/dolthub/pg_extension/library"
 )
 
 // PLATFORM specifies which platform applies to the current library loader. This will always be a three-letter string.
@@ -39,7 +40,6 @@ type darwinLib struct {
 }
 
 var _ InternalLoadedLibrary = (*darwinLib)(nil)
-var preloadStub sync.Once
 
 // loadLibraryInternal handles the loading of an extension's SO.
 func loadLibraryInternal(path string) (InternalLoadedLibrary, error) {

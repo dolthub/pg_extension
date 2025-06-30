@@ -26,7 +26,6 @@ import "C"
 
 import (
 	"fmt"
-	"sync"
 	"unsafe"
 
 	_ "github.com/dolthub/pg_extension/library"

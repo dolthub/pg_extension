@@ -14,16 +14,30 @@
 
 //go:build windows
 
-package main
+package pg_extension
 
 import (
+	"bytes"
+	"crypto/sha256"
+	_ "embed"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
 	"syscall"
 	"unsafe"
 )
+
+// PLATFORM specifies which platform applies to the current library loader. This will always be a three-letter string.
+const PLATFORM = "WIN"
+
+//go:embed output/postgres.exe
+var libDefBytes []byte
+
+//go:embed output/pg_extension.dll
+var dllBytes []byte
 
 // winLib is the Windows-specific implementation of InternalLoadedLibrary.
 type winLib struct{ dll syscall.Handle }
@@ -38,7 +52,48 @@ func loadLibraryInternal(path string) (InternalLoadedLibrary, error) {
 		if !ok || len(currentFileLocation) == 0 {
 			panic("cannot find the directory where this file exists")
 		}
-		dllDir := filepath.Join(filepath.Dir(currentFileLocation), "output")
+		// There are three scenarios that we need to consider when attempting to load the DLL:
+		// 1) The DLL exists in an output folder (this will be true for development)
+		// 2) The DLL exists alongside the binary
+		// 3) The DLL does not exist alongside the binary (or is the wrong version)
+		// In the third situation, we write the contained DLL and definition file alongside the binary, so that we'll
+		// always end up in the second situation. This enables both developmental and deployment workflows without
+		// explicit configuration.
+		var dllDir string
+		if _, err := os.Stat(filepath.Join(filepath.Dir(currentFileLocation), "output", "postgres.exe")); err == nil {
+			dllDir = filepath.Join(filepath.Dir(currentFileLocation), "output")
+		} else {
+			currentBinaryLocation, err := os.Executable()
+			if err != nil {
+				panic(fmt.Errorf("cannot find where the executable was launched:\n%s", err.Error()))
+			}
+			dllDir = filepath.Dir(currentBinaryLocation)
+			shouldWriteFiles := false
+			if _, err := os.Stat(filepath.Join(dllDir, "postgres.exe")); err != nil {
+				shouldWriteFiles = true
+			} else {
+				func() {
+					// If the DLL hash doesn't match our hash, then we overwrite it
+					extDll, err := os.Open(filepath.Join(filepath.Dir(currentBinaryLocation), "pg_extension.dll"))
+					if err != nil {
+						shouldWriteFiles = true
+						return
+					}
+					defer func() {
+						_ = extDll.Close()
+					}()
+					dllSha := sha256.Sum256(dllBytes)
+					extDllSha := sha256.New()
+					_, _ = io.Copy(extDllSha, extDll)
+					shouldWriteFiles = bytes.Compare(extDllSha.Sum(nil), dllSha[:]) != 0
+				}()
+			}
+			if shouldWriteFiles {
+				writeLocation := filepath.Dir(currentBinaryLocation)
+				_ = os.WriteFile(filepath.Join(writeLocation, "postgres.exe"), libDefBytes, 0755)
+				_ = os.WriteFile(filepath.Join(writeLocation, "pg_extension.dll"), dllBytes, 0755)
+			}
+		}
 		dirPtr, err := syscall.UTF16PtrFromString(dllDir)
 		if err != nil {
 			panic(err)

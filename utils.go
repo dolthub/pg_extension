@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package pg_extension
 
 /*
 #cgo CFLAGS: "-I${SRCDIR}/library"
@@ -29,12 +29,38 @@ func FromDatum[T any](d Datum) *T {
 	return (*T)(unsafe.Pointer(d))
 }
 
+// FromDatumGoString converts the given datum to a string.
+func FromDatumGoString(d Datum) string {
+	if d == 0 {
+		return ""
+	}
+	return C.GoString((*C.char)(unsafe.Pointer(d)))
+}
+
+// FromDatumGoBytes converts the given datum to a byte array of length N.
+func FromDatumGoBytes(d Datum, n uint) []byte {
+	if d == 0 {
+		return []byte{}
+	}
+	return C.GoBytes(unsafe.Pointer(d), C.int(n))
+}
+
 // ToDatum converts the given pointer to a Datum.
 func ToDatum[T any](val *T) Datum {
 	if val == nil {
 		return 0
 	}
 	return Datum(unsafe.Pointer(val))
+}
+
+// ToDatumGoString converts the given string to a Datum.
+func ToDatumGoString(str string) Datum {
+	return Datum(unsafe.Pointer(C.CString(str)))
+}
+
+// ToDatumGoBytes converts the given byte slice to a Datum.
+func ToDatumGoBytes(data []byte) Datum {
+	return Datum(unsafe.Pointer(C.CBytes(data)))
 }
 
 // Malloc allocates the given type within the C heap. These should always be followed up with a Free at some point

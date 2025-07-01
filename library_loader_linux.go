@@ -14,10 +14,11 @@
 
 //go:build linux
 
-package main
+package pg_extension
 
 /*
 #cgo LDFLAGS: -ldl
+#cgo LDFLAGS: -Wl,-E
 #include <dlfcn.h>
 #include <stdlib.h>
 */
@@ -25,11 +26,13 @@ import "C"
 
 import (
 	"fmt"
-	"path/filepath"
-	"runtime"
-	"sync"
 	"unsafe"
+
+	_ "github.com/dolthub/pg_extension/library"
 )
+
+// PLATFORM specifies which platform applies to the current library loader. This will always be a three-letter string.
+const PLATFORM = "LIN"
 
 // unixLib is the Linux-specific implementation of InternalLoadedLibrary.
 type unixLib struct {
@@ -38,23 +41,9 @@ type unixLib struct {
 }
 
 var _ InternalLoadedLibrary = (*unixLib)(nil)
-var preloadStub sync.Once
 
 // loadLibraryInternal handles the loading of an extension's SO.
 func loadLibraryInternal(path string) (InternalLoadedLibrary, error) {
-	preloadStub.Do(func() {
-		_, currentFileLocation, _, ok := runtime.Caller(0)
-		if !ok || len(currentFileLocation) == 0 {
-			panic("cannot find the directory where this file exists")
-		}
-		libraryStr := filepath.Join(filepath.Dir(currentFileLocation), "output", "pg_extension.so")
-		libraryStrC := C.CString(libraryStr)
-		defer C.free(unsafe.Pointer(libraryStrC))
-		if C.dlopen(libraryStrC, C.RTLD_LAZY|C.RTLD_GLOBAL) == nil {
-			panic("cannot find the pg_extension library")
-		}
-	})
-
 	pathC := C.CString(path)
 	defer C.free(unsafe.Pointer(pathC))
 
